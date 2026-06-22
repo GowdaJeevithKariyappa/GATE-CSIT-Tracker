@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GATE CSE 2027 — Preparation Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0a0e13;
+    --panel: #121922;
+    --panel-2: #18212c;
+    --line: #232e3a;
+    --line-soft: #1a232d;
+    --text: #abb3bb;
+    --muted: #7e8b99;
+    --muted-2: #59636e;
+    --amber: hsl(56, 100%, 60%);
+    --amber-soft: rgba(255,146,72,0.14);
+    --teal: #3ddc97;
+    --teal-soft: rgba(61,220,151,0.14);
+    --mono: 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
+    --sans: 'Manrope', -apple-system, 'Segoe UI', sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);}
+  body{
+    font-family:var(--sans);
+    color:var(--text);
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+  #app{max-width:880px;margin:0 auto;padding:20px 16px 80px;}
+
+  /* ---------- loading ---------- */
+  .loading-screen{
+    display:flex;align-items:center;justify-content:center;
+    height:60vh;color:var(--muted);font-family:var(--mono);font-size:13px;letter-spacing:.05em;
+  }
+
+  /* ---------- header ---------- */
+  .hdr{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-end;justify-content:space-between;
+    padding-bottom:18px;border-bottom:1px solid var(--line);margin-bottom:22px;}
+  .hdr-title{display:flex;flex-direction:column;gap:4px;}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.18em;color:var(--amber);text-transform:uppercase;}
+  .h1{font-family:var(--sans);font-weight:800;font-size:26px;line-height:1.1;letter-spacing:-.01em;}
+  .h1 span{color:var(--muted);font-weight:600;}
+  .countdown{text-align:right;font-family:var(--mono);}
+  .countdown .cd-label{font-size:10px;letter-spacing:.18em;color:var(--muted-2);text-transform:uppercase;}
+  .countdown .cd-num{font-size:38px;font-weight:700;color:var(--amber);line-height:1.05;}
+  .countdown .cd-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+
+  /* ---------- overall stat strip ---------- */
+  .stat-strip{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:22px;}
+  .stat-card{flex:1;min-width:130px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:13px 14px;}
+  .stat-card .num{font-family:var(--mono);font-size:22px;font-weight:700;color:var(--text);}
+  .stat-card .lbl{font-size:11px;color:var(--muted);margin-top:2px;}
+  .bar-track{height:6px;border-radius:4px;background:var(--line-soft);overflow:hidden;margin-top:8px;}
+  .bar-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--amber),var(--teal));transition:width .35s ease;}
+
+  /* ---------- phase rail (signature element) ---------- */
+  .rail{position:relative;display:flex;margin-bottom:28px;border-top:1px solid var(--line);padding-top:18px;}
+  .rail-node{flex:1;text-align:center;position:relative;padding:0 4px;}
+  .rail-node:not(:first-child)::before{
+    content:'';position:absolute;top:-18px;left:-50%;width:100%;height:1px;background:var(--line);z-index:0;
+  }
+  .rail-dot{width:9px;height:9px;border-radius:50%;background:var(--line);margin:0 auto 9px;
+    position:relative;top:-23px;border:2px solid var(--bg);}
+  .rail-dot.now{background:var(--amber);box-shadow:0 0 0 4px var(--amber-soft);}
+  .rail-dot.complete{background:var(--teal);}
+  .rail-name{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;}
+  .rail-pct{font-family:var(--mono);font-size:17px;font-weight:700;margin-top:3px;color:var(--text);}
+  .rail-node.is-now .rail-name{color:var(--amber);}
+  .rail-node.is-complete .rail-pct{color:var(--teal);}
+  .rail-bar{height:4px;border-radius:3px;background:var(--line-soft);margin:8px auto 0;width:80%;overflow:hidden;}
+  .rail-bar-fill{height:100%;background:var(--amber);border-radius:3px;}
+  .rail-node.is-complete .rail-bar-fill{background:var(--teal);}
+
+  /* ---------- toolbar ---------- */
+  .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px;flex-wrap:wrap;}
+  .toolbar-left{font-size:11px;color:var(--muted-2);font-family:var(--mono);letter-spacing:.05em;}
+  .toolbar-right{display:flex;gap:8px;}
+  .btn{font-family:var(--sans);font-size:12.5px;font-weight:600;color:var(--muted);background:var(--panel);
+    border:1px solid var(--line);border-radius:7px;padding:7px 12px;cursor:pointer;transition:.15s;}
+  .btn:hover{color:var(--text);border-color:var(--muted-2);}
+  .btn:focus-visible{outline:2px solid var(--amber);outline-offset:2px;}
+  .btn-danger:hover{color:#ff8585;border-color:#5a2c2c;}
+
+  /* ---------- phase group + month cards ---------- */
+  .phase-group{margin-bottom:6px;}
+  .phase-heading{display:flex;align-items:baseline;gap:8px;margin:30px 0 12px;}
+  .phase-heading .pn{font-family:var(--mono);font-size:11px;color:var(--amber);letter-spacing:.1em;}
+  .phase-heading .pt{font-weight:700;font-size:15px;}
+  .phase-heading .pl{flex:1;height:1px;background:var(--line);}
+
+  .month{background:var(--panel);border:1px solid var(--line);border-radius:12px;margin-bottom:10px;overflow:hidden;}
+  .month.is-current{border-color:rgba(255,146,72,0.4);}
+  .month-head{display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;user-select:none;}
+  .month-head:hover{background:var(--panel-2);}
+  .chev{font-family:var(--mono);color:var(--muted-2);transition:transform .2s ease;font-size:12px;flex-shrink:0;}
+  .month.open .chev{transform:rotate(90deg);}
+  .month-name{font-weight:700;font-size:14.5px;flex-shrink:0;}
+  .month-range{font-size:11px;color:var(--muted-2);font-family:var(--mono);flex-shrink:0;display:none;}
+  .now-pill{font-size:9.5px;font-family:var(--mono);letter-spacing:.08em;color:var(--amber);
+    border:1px solid rgba(255,146,72,0.4);border-radius:5px;padding:1px 6px;flex-shrink:0;}
+  .month-progress{flex:1;display:flex;align-items:center;gap:8px;min-width:80px;}
+  .month-progress .bar-track{flex:1;margin-top:0;}
+  .month-frac{font-family:var(--mono);font-size:12px;color:var(--muted);white-space:nowrap;flex-shrink:0;}
+
+  .month-body{max-height:0;overflow:hidden;transition:max-height .25s ease;}
+  .month.open .month-body{max-height:2000px;}
+  .item-list{list-style:none;margin:0;padding:4px 8px 10px;}
+  .item{display:flex;align-items:flex-start;gap:11px;padding:9px 8px;border-radius:8px;}
+  .item:hover{background:var(--panel-2);}
+  input[type=checkbox]{
+    appearance:none;-webkit-appearance:none;width:19px;height:19px;border:2px solid var(--line);
+    border-radius:6px;background:var(--bg);cursor:pointer;position:relative;flex-shrink:0;margin-top:1px;
+    transition:background .15s,border-color .15s;
+  }
+  input[type=checkbox]:checked{background:var(--teal);border-color:var(--teal);}
+  input[type=checkbox]:checked::after{
+    content:'';position:absolute;left:5px;top:1px;width:5px;height:9px;
+    border:solid var(--bg);border-width:0 2px 2px 0;transform:rotate(45deg);
+  }
+  input[type=checkbox]:focus-visible{outline:2px solid var(--amber);outline-offset:2px;}
+  .item-text{flex:1;font-size:13.5px;line-height:1.4;cursor:pointer;}
+  .item.done .item-text{color:var(--muted-2);text-decoration:line-through;text-decoration-color:var(--line);}
+  .tag{font-family:var(--mono);font-size:9.5px;letter-spacing:.05em;color:var(--muted);
+    border:1px solid var(--line);border-radius:5px;padding:2px 6px;flex-shrink:0;margin-top:1px;white-space:nowrap;}
+  .tag-mock{color:var(--amber);border-color:rgba(255,146,72,0.35);}
+  .tag-exam{color:var(--teal);border-color:rgba(61,220,151,0.4);font-weight:700;}
+
+  /* ---------- footer ---------- */
+  .footer{margin-top:36px;padding-top:16px;border-top:1px solid var(--line);
+    display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;}
+  .footer-note{font-size:11px;color:var(--muted-2);}
+
+  /* ---------- modal ---------- */
+  .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;
+    z-index:50;padding:20px;}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:22px;max-width:340px;}
+  .modal h3{margin:0 0 8px;font-size:16px;}
+  .modal p{margin:0 0 18px;font-size:13px;color:var(--muted);line-height:1.5;}
+  .modal-actions{display:flex;gap:8px;justify-content:flex-end;}
+
+  @media (max-width:560px){
+    .h1{font-size:21px;}
+    .countdown .cd-num{font-size:30px;}
+    .rail-name{font-size:9px;}
+    .rail-pct{font-size:14px;}
+    .month-range{display:none;}
+    .stat-card{min-width:100px;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{transition:none !important;}
+  }
+</style>
+</head>
+<body>
+<div id="app"><div class="loading-screen">loading mission data…</div></div>
+
+<script>
+(function(){
+
+  var EXAM_DATE = new Date('2027-02-06T00:00:00');
+  var TODAY = new Date();
+
+  var MONTHS = [
+    { id:'jun', name:'June 2026', range:'Jun 1 – Jun 30', start:'2026-06-01', phase:0,
+      items:[
+        {t:'Linear Algebra — matrices, eigenvalues, rank', c:'MATHS'},
+        {t:'Calculus — limits, continuity, maxima/minima, integration', c:'MATHS'},
+        {t:'Probability & Statistics — distributions, Bayes, expectation', c:'MATHS'},
+        {t:'Discrete Math — Propositional & Predicate Logic', c:'DM'},
+        {t:'Discrete Math — Sets, Relations, Functions', c:'DM'},
+        {t:'Discrete Math — Posets & Lattices', c:'DM'},
+        {t:'Discrete Math — Groups', c:'DM'},
+        {t:'C Programming — syntax, pointers, recursion', c:'DSA'},
+        {t:'Data Structures — Arrays & Strings', c:'DSA'},
+        {t:'Data Structures — Linked Lists', c:'DSA'},
+        {t:'GA — daily practice habit (June)', c:'GA'}
+      ]},
+    { id:'jul', name:'July 2026', range:'Jul 1 – Jul 31', start:'2026-07-01', phase:0,
+      items:[
+        {t:'Stacks & Queues', c:'DSA'},
+        {t:'Trees — Binary Search Trees', c:'DSA'},
+        {t:'Trees — AVL Trees', c:'DSA'},
+        {t:'Trees — Heaps', c:'DSA'},
+        {t:'Trees — B / B+ Trees', c:'DSA'},
+        {t:'Graphs — Representations', c:'DSA'},
+        {t:'Graphs — Traversals (BFS / DFS)', c:'DSA'},
+        {t:'Hashing', c:'DSA'},
+        {t:'Complexity Analysis & Recurrences (Master theorem)', c:'DSA'},
+        {t:'Sorting — all 7 classic algorithms', c:'DSA'},
+        {t:'Searching algorithms', c:'DSA'},
+        {t:'Subject test: DSA (end of month)', c:'MOCK'},
+        {t:'GA — daily practice habit (July)', c:'GA'}
+      ]},
+    { id:'aug', name:'August 2026', range:'Aug 1 – Aug 31', start:'2026-08-01', phase:1,
+      items:[
+        {t:'Greedy algorithms', c:'ALGO'},
+        {t:'Divide & Conquer', c:'ALGO'},
+        {t:'Dynamic Programming — core patterns', c:'ALGO'},
+        {t:'Graph algorithms — MST (Prim / Kruskal)', c:'ALGO'},
+        {t:'Graph algorithms — Shortest path (Dijkstra / Bellman-Ford)', c:'ALGO'},
+        {t:'Graph algorithms — Topological sort, SCC', c:'ALGO'},
+        {t:'NP-Completeness basics', c:'ALGO'},
+        {t:'Digital Logic — Number systems', c:'DLD'},
+        {t:'Digital Logic — Boolean algebra / K-Maps', c:'DLD'},
+        {t:'Digital Logic — Combinational circuits', c:'DLD'},
+        {t:'Digital Logic — Sequential circuits', c:'DLD'},
+        {t:'Subject test: Algorithms', c:'MOCK'},
+        {t:'Subject test: Digital Logic', c:'MOCK'},
+        {t:'GA — daily practice habit (August)', c:'GA'}
+      ]},
+    { id:'sep', name:'September 2026', range:'Sep 1 – Sep 30', start:'2026-09-01', phase:1,
+      items:[
+        {t:'COA — Instruction sets & addressing modes', c:'COA'},
+        {t:'COA — Pipelining', c:'COA'},
+        {t:'COA — Cache memory', c:'COA'},
+        {t:'COA — Memory hierarchy', c:'COA'},
+        {t:'COA — I/O organization', c:'COA'},
+        {t:'OS — Process & threads', c:'OS'},
+        {t:'OS — CPU scheduling', c:'OS'},
+        {t:'OS — Synchronization', c:'OS'},
+        {t:'OS — Deadlocks', c:'OS'},
+        {t:'OS — Memory management (paging / segmentation)', c:'OS'},
+        {t:'OS — File systems', c:'OS'},
+        {t:'Subject test: COA + OS', c:'MOCK'},
+        {t:'GA — daily practice habit (September)', c:'GA'}
+      ]},
+    { id:'oct', name:'October 2026', range:'Oct 1 – Oct 31', start:'2026-10-01', phase:1,
+      items:[
+        {t:'DBMS — ER model', c:'DBMS'},
+        {t:'DBMS — Relational algebra', c:'DBMS'},
+        {t:'DBMS — SQL', c:'DBMS'},
+        {t:'DBMS — Normalization (1NF–BCNF)', c:'DBMS'},
+        {t:'DBMS — Transactions / ACID', c:'DBMS'},
+        {t:'DBMS — Indexing', c:'DBMS'},
+        {t:'TOC — Finite automata', c:'TOC'},
+        {t:'TOC — Regular expressions', c:'TOC'},
+        {t:'TOC — CFG / PDA', c:'TOC'},
+        {t:'TOC — Turing machines', c:'TOC'},
+        {t:'TOC — Decidability', c:'TOC'},
+        {t:'Subject test: DBMS + TOC', c:'MOCK'},
+        {t:'GA — daily practice habit (October)', c:'GA'}
+      ]},
+    { id:'nov', name:'November 2026', range:'Nov 1 – Nov 30', start:'2026-11-01', phase:2,
+      items:[
+        {t:'CN — Layering (OSI / TCP-IP)', c:'CN'},
+        {t:'CN — Data link layer', c:'CN'},
+        {t:'CN — Routing', c:'CN'},
+        {t:'CN — Transport layer (TCP / UDP)', c:'CN'},
+        {t:'CN — IP addressing', c:'CN'},
+        {t:'Compiler — Lexical analysis', c:'CD'},
+        {t:'Compiler — Parsing (top-down / bottom-up)', c:'CD'},
+        {t:'Compiler — Syntax-directed translation', c:'CD'},
+        {t:'Compiler — Intermediate code & optimization', c:'CD'},
+        {t:'Full syllabus gap audit', c:'REV'},
+        {t:'GA — intensive deep dive', c:'GA'},
+        {t:'Full-length mock 1', c:'MOCK'},
+        {t:'Full-length mock 2', c:'MOCK'}
+      ]},
+    { id:'dec', name:'December 2026', range:'Dec 1 – Dec 31', start:'2026-12-01', phase:3,
+      items:[
+        {t:'Revision — Maths + DSA + Algorithms', c:'REV'},
+        {t:'Revision — OS + COA + Digital Logic', c:'REV'},
+        {t:'Revision — DBMS + CN', c:'REV'},
+        {t:'Revision — TOC + Compiler Design', c:'REV'},
+        {t:'Full PYQ sweep — last 10 years', c:'REV'},
+        {t:'Full-length mock 1', c:'MOCK'},
+        {t:'Full-length mock 2', c:'MOCK'},
+        {t:'Full-length mock 3', c:'MOCK'},
+        {t:'Full-length mock 4', c:'MOCK'},
+        {t:'GA — daily practice habit (December)', c:'GA'}
+      ]},
+    { id:'jan', name:'January 2027', range:'Jan 1 – Jan 31', start:'2027-01-01', phase:3,
+      items:[
+        {t:'Weak-topic repair — top 10 weakest', c:'REV'},
+        {t:'Revision cycle 2 — subjects 1–6', c:'REV'},
+        {t:'Revision cycle 2 — subjects 7–11', c:'REV'},
+        {t:'Mock + error-analysis loop', c:'REV'},
+        {t:'Full-length mock 1', c:'MOCK'},
+        {t:'Full-length mock 2', c:'MOCK'},
+        {t:'Full-length mock 3', c:'MOCK'},
+        {t:'Full-length mock 4', c:'MOCK'},
+        {t:'Full-length mock 5', c:'MOCK'},
+        {t:'Full-length mock 6', c:'MOCK'},
+        {t:'GA — daily practice habit (January)', c:'GA'}
+      ]},
+    { id:'feb', name:'February 2027', range:'Feb 1 – exam day', start:'2027-02-01', phase:4,
+      items:[
+        {t:'Master formula sheet — final review', c:'REV'},
+        {t:'Last 7-day sprint protocol', c:'REV'},
+        {t:'Final taper mock', c:'MOCK'},
+        {t:'Exam day — GATE CSE 2027', c:'EXAM'}
+      ]}
+  ];
+
+  var PHASES = [
+    {name:'Foundation'},
+    {name:'Core Build'},
+    {name:'Integration'},
+    {name:'Revision'},
+    {name:'Final Sprint'}
+  ];
+
+  var STORAGE_KEY = 'gate-2027-progress';
+  var state = {};
+  var expanded = {};
+  var hasStorage = !!(window.storage && window.storage.get && window.storage.set);
+
+  function itemId(monthId, idx){ return monthId + '-' + idx; }
+
+  function currentMonthId(){
+    var cur = null;
+    for (var i=0;i<MONTHS.length;i++){
+      var d = new Date(MONTHS[i].start + 'T00:00:00');
+      if (d <= TODAY) cur = MONTHS[i].id;
+    }
+    return cur || MONTHS[0].id;
+  }
+
+  function monthStats(m){
+    var total = m.items.length, done = 0;
+    for (var i=0;i<m.items.length;i++){ if (state[itemId(m.id,i)]) done++; }
+    return {done:done,total:total,pct: total? Math.round(done/total*100):0};
+  }
+
+  function phaseStats(phaseIdx){
+    var done=0, total=0;
+    MONTHS.forEach(function(m){
+      if (m.phase===phaseIdx){ var s=monthStats(m); done+=s.done; total+=s.total; }
+    });
+    return {done:done,total:total,pct: total? Math.round(done/total*100):0};
+  }
+
+  function overallStats(){
+    var done=0,total=0;
+    MONTHS.forEach(function(m){ var s=monthStats(m); done+=s.done; total+=s.total; });
+    return {done:done,total:total,pct: total? Math.round(done/total*100):0};
+  }
+
+  function daysToExam(){
+    var ms = EXAM_DATE.getTime() - TODAY.getTime();
+    return Math.max(0, Math.ceil(ms/86400000));
+  }
+
+  function tagClass(c){
+    if (c==='MOCK') return 'tag tag-mock';
+    if (c==='EXAM') return 'tag tag-exam';
+    return 'tag';
+  }
+
+  function escapeHtml(s){
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function render(){
+    var ov = overallStats();
+    var curId = currentMonthId();
+
+    var html = '';
+
+    // header
+    html += '<div class="hdr">';
+    html += '  <div class="hdr-title">';
+    html += '    <span class="eyebrow">GATE CSE 2027</span>';
+    html += '    <h1 class="h1">Preparation <span>Tracker</span></h1>';
+    html += '  </div>';
+    html += '  <div class="countdown">';
+    html += '    <div class="cd-label">Days to exam</div>';
+    html += '    <div class="cd-num">' + daysToExam() + '</div>';
+    html += '    <div class="cd-sub">~Feb 2027 (confirm via notification)</div>';
+    html += '  </div>';
+    html += '</div>';
+
+    // stat strip
+    html += '<div class="stat-strip">';
+    html += '  <div class="stat-card"><div class="num">' + ov.done + ' / ' + ov.total + '</div><div class="lbl">topics completed</div>';
+    html += '    <div class="bar-track"><div class="bar-fill" style="width:' + ov.pct + '%"></div></div></div>';
+    html += '  <div class="stat-card"><div class="num">' + ov.pct + '%</div><div class="lbl">overall progress</div></div>';
+    var curMonth = MONTHS.find(function(m){return m.id===curId;});
+    var cms = monthStats(curMonth);
+    html += '  <div class="stat-card"><div class="num">' + cms.done + ' / ' + cms.total + '</div><div class="lbl">this month — ' + curMonth.name + '</div></div>';
+    html += '</div>';
+
+    // phase rail
+    html += '<div class="rail">';
+    PHASES.forEach(function(p, idx){
+      var ps = phaseStats(idx);
+      var isNow = curMonth.phase === idx;
+      var isComplete = ps.pct === 100;
+      var dotClass = isComplete ? 'rail-dot complete' : (isNow ? 'rail-dot now' : 'rail-dot');
+      var nodeClass = 'rail-node' + (isNow?' is-now':'') + (isComplete?' is-complete':'');
+      html += '<div class="' + nodeClass + '">';
+      html += '<div class="' + dotClass + '"></div>';
+      html += '<div class="rail-name">' + p.name + '</div>';
+      html += '<div class="rail-pct">' + ps.pct + '%</div>';
+      html += '<div class="rail-bar"><div class="rail-bar-fill" style="width:' + ps.pct + '%"></div></div>';
+      html += '</div>';
+    });
+    html += '</div>';
+
+    // toolbar
+    html += '<div class="toolbar">';
+    html += '  <div class="toolbar-left">102 topics · 9 months · 5 phases</div>';
+    html += '  <div class="toolbar-right">';
+    html += '    <button class="btn" data-action="expand-all">Expand all</button>';
+    html += '    <button class="btn" data-action="collapse-all">Collapse all</button>';
+    html += '    <button class="btn btn-danger" data-action="reset">Reset progress</button>';
+    html += '  </div>';
+    html += '</div>';
+
+    // months grouped by phase
+    PHASES.forEach(function(p, pIdx){
+      html += '<div class="phase-group">';
+      html += '  <div class="phase-heading"><span class="pn">PHASE ' + (pIdx+1) + '</span><span class="pt">' + p.name + '</span><span class="pl"></span></div>';
+      MONTHS.filter(function(m){return m.phase===pIdx;}).forEach(function(m){
+        var ms = monthStats(m);
+        var isOpen = !!expanded[m.id];
+        var isCurrent = m.id === curId;
+        html += '<div class="month' + (isOpen?' open':'') + (isCurrent?' is-current':'') + '" data-month="' + m.id + '">';
+        html += '  <div class="month-head" data-action="toggle-month" data-month="' + m.id + '">';
+        html += '    <span class="chev">▸</span>';
+        html += '    <span class="month-name">' + m.name + '</span>';
+        html += '    <span class="month-range">' + m.range + '</span>';
+        if (isCurrent) html += '<span class="now-pill">NOW</span>';
+        html += '    <span class="month-progress"><span class="bar-track"><span class="bar-fill" style="width:' + ms.pct + '%"></span></span></span>';
+        html += '    <span class="month-frac">' + ms.done + '/' + ms.total + '</span>';
+        html += '  </div>';
+        html += '  <div class="month-body"><ul class="item-list">';
+        m.items.forEach(function(it, idx){
+          var id = itemId(m.id, idx);
+          var done = !!state[id];
+          html += '<li class="item' + (done?' done':'') + '">';
+          html += '<input type="checkbox" id="cb-' + id + '" data-action="toggle-item" data-id="' + id + '" ' + (done?'checked':'') + '>';
+          html += '<label class="item-text" for="cb-' + id + '">' + escapeHtml(it.t) + '</label>';
+          html += '<span class="' + tagClass(it.c) + '">' + it.c + '</span>';
+          html += '</li>';
+        });
+        html += '  </ul></div>';
+        html += '</div>';
+      });
+      html += '</div>';
+    });
+
+    // footer
+    html += '<div class="footer">';
+    html += '  <div class="footer-note">Progress saved automatically' + (hasStorage?'':' (session only — storage unavailable)') + '. Built from your GATE CSE 2027 master plan.</div>';
+    html += '</div>';
+
+    document.getElementById('app').innerHTML = html;
+  }
+
+  function showResetModal(){
+    var bg = document.createElement('div');
+    bg.className = 'modal-bg';
+    bg.innerHTML =
+      '<div class="modal">' +
+      '<h3>Reset all progress?</h3>' +
+      '<p>This clears every checked topic across all 9 months. This can\'t be undone.</p>' +
+      '<div class="modal-actions">' +
+      '<button class="btn" data-action="cancel-reset">Cancel</button>' +
+      '<button class="btn btn-danger" data-action="confirm-reset">Reset everything</button>' +
+      '</div></div>';
+    document.body.appendChild(bg);
+    bg.addEventListener('click', function(e){
+      if (e.target === bg || e.target.dataset.action === 'cancel-reset') bg.remove();
+      if (e.target.dataset.action === 'confirm-reset'){
+        state = {};
+        persist();
+        bg.remove();
+        render();
+      }
+    });
+  }
+
+  async function persist(){
+    if (!hasStorage) return;
+    try{
+      await window.storage.set(STORAGE_KEY, JSON.stringify(state), false);
+    }catch(e){ console.error('Could not save progress', e); }
+  }
+
+  async function loadState(){
+    if (!hasStorage) return {};
+    try{
+      var res = await window.storage.get(STORAGE_KEY, false);
+      return res && res.value ? JSON.parse(res.value) : {};
+    }catch(e){
+      return {};
+    }
+  }
+
+  document.getElementById('app').addEventListener('click', function(e){
+    var t = e.target;
+    var action = t.dataset ? t.dataset.action : null;
+
+    if (action === 'toggle-item'){
+      var id = t.dataset.id;
+      state[id] = t.checked;
+      persist();
+      render();
+      return;
+    }
+    if (action === 'toggle-month'){
+      var mid = t.closest('[data-action="toggle-month"]').dataset.month;
+      expanded[mid] = !expanded[mid];
+      render();
+      return;
+    }
+    if (action === 'expand-all'){
+      MONTHS.forEach(function(m){ expanded[m.id] = true; });
+      render();
+      return;
+    }
+    if (action === 'collapse-all'){
+      MONTHS.forEach(function(m){ expanded[m.id] = false; });
+      render();
+      return;
+    }
+    if (action === 'reset'){
+      showResetModal();
+      return;
+    }
+  });
+
+  (async function init(){
+    state = await loadState();
+    var curId = currentMonthId();
+    expanded[curId] = true;
+    render();
+  })();
+
+})();
+</script>
+</body>
+</html>
